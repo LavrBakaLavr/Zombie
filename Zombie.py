@@ -12,80 +12,111 @@ f=[]
 
 for line in a:
     f.append(line.split())
+try:
+    #размер сетки  
+    if int(f[0][0]) > 0 : N = int(f[0][0])
 
-#размер сетки    
-N = int(f[0][0])
-
-#исходное положение зомби
-START = (int(f[1][0]), int(f[1][1]))
-
-#список начальных позиций существ
-CREARURES_START = []
-for i in range(len(f[2])-1):
-    if i % 2 == 0 : CREARURES_START.append((int(f[2][i]), int(f[2][i+1])))
-
-#список движений зомби    
-MOVE = f[3][0]
-
-#заводим перепись зомби по порядку заражения [[начальная координата X][начальная координата Y]]
-zombie_list = [[START[1], START[0]]]
-
-#создаем сетку мира
-world = [[0] * N for i in range(N)]
-
-#инициализируем зомби
-world[zombie_list[0][0]][zombie_list[0][1]] = 1
-
-#инициализируем существ
-for i in range(len(CREARURES_START)):
-    world[CREARURES_START[i][1]][CREARURES_START[i][0]] = 2
+    #исходное положение зомби
+    if ((int(f[1][0]) < N) and int(f[1][1]) < N) : 
+        START = (int(f[1][0]), int(f[1][1]))
     
-#функция движения зомби, на вход подаются:
-# step - шаг зомби, определяется увеличением или уменьшением значении координаты в зависимости от направления
-# axis - направление движения зомби, где 1 - по горизонтали, 0 - по вертикали
-# zombie_list - список зомби
-# world - состояние мира
-def zombie_move (step, axis, zombie_list, world):
-    zombie_list[i][axis] = zombie_list[i][axis] + step
+    #список начальных позиций существ
+    CREARURES_START = {}
+    for i in range(len(f[2])-1):
+        if ((int(f[2][i]) < N) and (int(f[2][i+1]) < N) and (int(f[2][i]) >=0) and (int(f[2][i+1]) >= 0)) :
+            if i % 2 == 0 : CREARURES_START.update({(int(f[2][i]), int(f[2][i+1])): 'creature'})
+        else : 
+            if i % 2 == 0 : print('существо', int(i/2 + 1), 'исключено, так как находится за пределами мира')
     
-    #проверяем перемещение через край мира
-    if zombie_list[i][axis] == N : zombie_list[i][axis] = 0 
-    if zombie_list[i][axis] == -1 : zombie_list[i][axis] = N - 1
+    #список движений зомби    
+    MOVE = f[3][0]
+    for h in range(len(MOVE)) :
+        if MOVE[h] != 'R' and MOVE[h] != 'D' and MOVE[h] != 'U' : 
+            print ('Обнаружено некорректное значение в пути зомби')
+            MOVE = MOVE.replace(MOVE[h], '')
     
-    print ('zombie', i, 'moved to X:', zombie_list[i][1], 'Y:', zombie_list[i][0])
-    
-    #проверяем наличие существа в клетке с зомби и заражем его при обнаружении
-    if world[zombie_list[i][0]][zombie_list[i][1]] == 2 :
-        zombie_list.append([zombie_list[i][0], zombie_list[i][1]])
-        print ('zombie', i, 'infected creature at X:', zombie_list[i][1], 'Y:', zombie_list[i][0])
-        world[zombie_list[i][0]][zombie_list[i][1]] = 1
+    #заводим перепись зомби по порядку заражения [[начальная координата X][начальная координата Y][шаг]]
+    zombie_list = {0 : [START[1], START[0], 0]}
+    creatures_list = CREARURES_START.copy()
         
-i = 0
-
-#двигаем зомби в соответствии с заданным путем
-while len(zombie_list) > i :
-    for j in range(len(MOVE)):
-        if MOVE[j] == 'R' : 
-            zombie_move(1, 1, zombie_list, world)
-        if MOVE[j] == 'L' : 
-            zombie_move(-1, 1, zombie_list, world)
-        if MOVE[j] == 'U' : 
-            zombie_move(-1, 0, zombie_list, world)
-        if MOVE[j] == 'D' : 
-            zombie_move(1, 0, zombie_list, world)
+    #функция движения зомби        
+    def zombie_move (step, axis, zombie, number):
+        
+        zombie[axis] = zombie[axis] + step
+        zombie[2] = zombie[2] + 1
+        
+        if zombie[axis] == N : zombie[axis] = 0
+        if zombie[axis] == -1 : zombie[axis] = N - 1
+        
+        print ('zombie', number, 'moved to X:', zombie[1], 'Y:', zombie[0])
+        
+        return zombie
+    
+    #функция заражения существа    
+    def creature_to_zombie ():
+        if creatures_list.get((zombie_list[zombie_number][1], zombie_list[zombie_number][0])) != None :
+            creatures_list.pop((zombie_list[zombie_number][1], zombie_list[zombie_number][0]))
+            zombie_list.update({len(zombie_list) : [zombie_list[zombie_number][0], zombie_list[zombie_number][1], 0]})
+            print ('zombie', zombie_number, 'infected creature at X:', zombie_list[zombie_number][1], 'Y:', zombie_list[zombie_number][0])
+        return
+        
+    count_of_ended = 0
+    
+    # Цикл для последовательного движения зомби
+    #zombie_number = 0
+    #while len(zombie_list) > zombie_number :
+    #    for j in range(len(MOVE)):
+    # Для акцивации нужно раскомментировать в том числе конец цикла
+    
+    # Цикл для параллельного движения зомби
+    while len(zombie_list) > count_of_ended :
+        for zombie_number in range(len(zombie_list)):
+    # Конец цикла для параллельного движения зомби
+            if zombie_list[zombie_number][2] < 4 :
+                target = MOVE[zombie_list[zombie_number][2]]
+                if target == 'R' : 
+                    zombie_list[zombie_number] = zombie_move(1, 1, zombie_list[zombie_number], zombie_number)
+                    creature_to_zombie()
+                                    
+                if target == 'L' : 
+                    zombie_list[zombie_number] = zombie_move(-1, 1, zombie_list[zombie_number], zombie_number)
+                    creature_to_zombie()
+                        
+                if target == 'U' : 
+                    zombie_list[zombie_number] = zombie_move(-1, 0, zombie_list[zombie_number], zombie_number)
+                    creature_to_zombie()
+                        
+                if target == 'D' : 
+                    zombie_list[zombie_number] = zombie_move(1, 0, zombie_list[zombie_number], zombie_number)
+                    creature_to_zombie()
+            else : count_of_ended = count_of_ended + 1
+     
+    # Конец цикла для последовательного движения зомби
+    #    zombie_number = zombie_number + 1
+    
+    #выводим позиции зомби
+    
     print('\n')
-    i = i + 1
+    for j in range(len(zombie_list)):
+        print('zombie', j, 'stay at X:', zombie_list[j][1], 'Y:', zombie_list[j][0])
+        
+    #ищем выживших существ
     
-#выводим позиции зомби
-for i in range(len(zombie_list)):
-    print('zombie', i, 'stay at X:', zombie_list[i][1], 'Y:', zombie_list[i][0])
+    print('\n')
+    live_creatures = list(creatures_list.keys())
+    for k in range(len(live_creatures)) :
+        print('creatures stay on X:', live_creatures[k][0], 'Y:', live_creatures[k][1])
+        
+    if live_creatures == [] : print('creatures None')
+
+except ValueError:
+    print('N, START или CREARURES_START не является числом')
     
-#ищем выживших существ
-k = 0
-
-for i in range(len(CREARURES_START)):
-    if world[CREARURES_START[i][1]][CREARURES_START[i][0]] == 2: 
-        print('creature stay on X:', CREARURES_START[i][0], 'Y:', CREARURES_START[i][1])
-        k = 1
-
-if k == 0 : print('creatures None')
+except IndexError:
+    print('Недостаточно данных в файле входных данных')
+    
+except NameError:
+    print('Ошибка вводных данных')
+    
+finally: 
+    a.close()
